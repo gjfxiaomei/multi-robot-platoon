@@ -1,0 +1,24 @@
+<launch>
+    <node pkg="stage_first" type="tf_broadcaster" name="aes1_broadcaster" output="screen">
+        <param name="robot_name" value="ares1"/>
+    </node>
+
+    <node pkg="stage_first" type="tf_broadcaster" name="aes2_broadcaster" output="screen">
+        <param name="robot_name" value="ares2"/>
+    </node>
+
+    <node pkg="stage_first" type="tf_broadcaster" name="aes3_broadcaster" output="screen">
+        <param name="robot_name" value="ares3"/>
+    </node>
+    <!-- <node pkg="stage_first" type="tf_broadcaster" args="/ares1" name="aes1_broadcaster"/>
+
+    <node pkg="stage_first" type="tf_broadcaster" args="/ares2" name="aes2_broadcaster"/>
+
+    <node pkg="stage_first" type="tf_broadcaster" args="/ares2" name="aes3_broadcaster"/> -->
+
+    <node pkg="stage_first" type="leader" name="leader" output="screen" />
+
+    <node pkg="stage_first" type="follower1" name="follower1" output="screen"/>
+
+    <node pkg="stage_first" type="follower2" name="follower2" output="screen" />
+</launch>

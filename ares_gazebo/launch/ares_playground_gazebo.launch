@@ -1,0 +1,63 @@
+<launch>
+  <!-- <arg name="world_name" value="$(find ares_gazebo)/worlds/playground.world"/> -->
+  <arg name="world_name" value="$(find turtlebot3_gazebo)/worlds/empty.world" />
+  <arg name="model" default="$(env TURTLEBOT3_MODEL)" doc="model type [burger, waffle, waffle_pi]"/>
+  <arg name="x_pos" default="0.0"/>
+  <arg name="y_pos" default="0.0"/>
+  <arg name="z_pos" default="0.0"/>
+
+  <!-- run gazebo -->
+  <include file="$(find gazebo_ros)/launch/empty_world.launch">
+    <arg name="world_name" value="$(arg world_name)"/>
+    <arg name="paused" value="false"/>
+    <arg name="use_sim_time" value="true"/>
+    <arg name="gui" value="true"/>
+    <arg name="headless" value="false"/>
+    <arg name="debug" value="false"/>
+  </include>  
+
+  <group ns="ares1">
+    <!--load robot model description param-->
+    <param name="robot_description" command="$(find xacro)/xacro.py $(find turtlebot3_description)/urdf/turtlebot3_$(arg model).urdf.xacro" />
+    
+    <!-- run joint_state_publisher node to publish joint state -->
+    <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher"></node>
+
+    <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher">
+        <param name="publish_frequency" type="double" value="50.0" />
+        <param name="tf_prefix" value="ares1"/>
+    </node>
+
+    <!-- load robot model in gazebo -->
+    <node name="spawn_urdf" pkg="gazebo_ros" type="spawn_model" respawn="false" output="screen" args="-urdf -model ares1 -x 0 -y 0 -param robot_description" />
+  </group>
+
+
+    <group ns="ares2">
+    <param name="robot_description" command="$(find xacro)/xacro.py $(find turtlebot3_description)/urdf/turtlebot3_$(arg model).urdf.xacro" />
+    
+    <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher"></node>
+
+    <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher">
+        <param name="publish_frequency" type="double" value="50.0" />
+        <param name="tf_prefix" value="ares2"/>
+    </node>
+
+    <node name="spawn_urdf" pkg="gazebo_ros" type="spawn_model" respawn="false" output="screen" args="-urdf -model ares2 -x 0 -y 1 -param robot_description" />
+  </group>
+
+    <group ns="ares3">
+    <!--load robot model description param-->
+    <param name="robot_description" command="$(find xacro)/xacro.py $(find turtlebot3_description)/urdf/turtlebot3_$(arg model).urdf.xacro" />
+    
+    <!-- run joint_state_publisher node to publish joint state -->
+    <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher"></node>
+
+    <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher">
+        <param name="publish_frequency" type="double" value="50.0" />
+        <param name="tf_prefix" value="ares3"/>
+    </node>
+    <!-- load robot model in gazebo -->
+    <node name="spawn_urdf" pkg="gazebo_ros" type="spawn_model" respawn="false" output="screen" args="-urdf -model ares3 -x 0 -y -1 -param robot_description" />
+  </group>
+</launch>

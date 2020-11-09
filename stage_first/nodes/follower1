@@ -1,0 +1,118 @@
+#! /usr/bin/env python
+import rospy
+import tf
+from geometry_msgs.msg import Twist
+from sensor_msgs.msg import LaserScan
+from nav_msgs.msg import Odometry
+from math import pi, sqrt, atan2
+import time
+
+class Follower1:
+    def __init__(self):
+        rospy.init_node('follower1')
+        self.vel_pub = rospy.Publisher("/ares2/cmd_vel", Twist, queue_size=1000)
+        self.scan_sub = rospy.Subscriber("/ares2/scan", LaserScan, self.scan_callback)
+        self.intensities = [0] * 27
+        self.mul = 1
+        self.rate =rospy.Rate(100)
+        self.listener = tf.TransformListener()
+        rospy.loginfo("follower1 init")
+        self.trans_ms = None
+        self.rot_ms = None
+        self.trans_sm = None
+        self.rot_sm = None
+        while not rospy.is_shutdown():
+            try:
+                (self.trans_sm, self.rot_sm) = self.listener.lookupTransform('ares2/odom', 'ares1/odom', rospy.Time(0))
+            except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
+                continue
+            
+            try:
+                (self.trans_ms, self.rot_ms) = self.listener.lookupTransform('ares1/odom', 'ares2/odom', rospy.Time(0))
+            except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
+                continue
+
+            angular = 4.0*atan2(self.trans_sm[1], self.trans_sm[0])
+            linear = 0.5*sqrt(self.trans_sm[0]**2 + self.trans_sm[1]**2)
+            vel_msg = Twist()
+            if linear > 0.01:
+                vel_msg.linear.x = linear
+                vel_msg.angular.z = angular
+            else:
+                vel_msg.linear.x = 0
+                vel_msg.angular.z = 0
+            self.vel_pub.publish(vel_msg)
+            self.rate.sleep()
+
+        rospy.loginfo("follower1 shutdown")
+
+
+    def scan_callback(self, msg):
+        for i in range(27):
+            self.intensities[i] = msg.intensities[i]
+            self.mul = self.mul*self.intensities[i]
+    
+    def degree2radians(self, angle_in_degrees):
+        return angle_in_degrees * pi/180.0
+    
+    def getDistance(self, x1, y1, x2, y2):
+        return sqrt(pow(x1-x2,2) +pow(y1-y2, 2))
+
+    
+    def move(self, speed, distance, is_forward):
+        vel_msg = Twist()
+        if is_forward:
+            vel_msg.linear.x = abs(speed)
+        else:
+            vel_msg.linear.x = -abs(speed)
+        
+        vel_msg.linear.y = 0
+        vel_msg.linear.z = 0
+
+        vel_msg.angular.x = 0
+        vel_msg.angular.y = 0
+        vel_msg.angular.z = 0
+
+        t0 = time.time()
+        current_distance = 0
+        rate = rospy.Rate(100)
+        while current_distance < distance:
+            self.vel_pub.publish(vel_msg)
+            t1 = time.time()
+            current_distance = speed*(t1-t0)
+            # rospy.spin()
+            rate.sleep()
+        
+        vel_msg.linear.x = 0
+        # self.vel_pub.publish(vel_msg)
+
+    def rotate(self, angular_speed, relative_angle, clockwise):
+        vel_msg = Twist()
+        vel_msg.linear.x = 0
+        vel_msg.linear.y = 0
+        vel_msg.linear.z = 0
+
+        vel_msg.angular.x = 0
+        vel_msg.angular.y = 0
+
+        if clockwise:
+            vel_msg.angular.z = -abs(angular_speed)
+        else:
+            vel_msg.angular.z = abs(angular_speed)
+
+        t0 = rospy.Time.now().to_sec()
+        current_angle = 0
+        rate =rospy.Rate(1000)
+        while current_angle < relative_angle:
+            self.vel_pub.publish(vel_msg)
+            t1 = rospy.Time.now().to_sec()
+            current_angle = angular_speed*(t1 - t0)
+            rospy.spin()
+            rate.sleep()
+        vel_msg.angular.z = 0
+        self.vel_pub.publish(vel_msg)
+
+
+if __name__ == "__main__":
+    follower1 = Follower1()
+    pass

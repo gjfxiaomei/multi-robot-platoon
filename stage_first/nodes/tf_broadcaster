@@ -1,0 +1,22 @@
+#! /usr/bin/env python
+import roslib
+import rospy
+from nav_msgs.msg import Odometry
+import tf
+from tf.transformations import euler_from_quaternion, quaternion_from_euler
+def pose_callback(msg, robot_name):
+    br = tf.TransformBroadcaster()
+    br.sendTransform(
+        (msg.pose.pose.position.x, msg.pose.pose.position.y, 0),
+        (msg.pose.pose.orientation.x, msg.pose.pose.orientation.y, msg.pose.pose.orientation.z, msg.pose.pose.orientation.w), 
+        rospy.Time.now(), 
+        '%s/odom' % robot_name,
+         "world")
+
+
+if __name__ == "__main__":
+    rospy.init_node('tf_broadcaster')
+    robot_name = rospy.get_param('~robot_name')
+    rospy.loginfo(robot_name)
+    rospy.Subscriber('%s/odom'%robot_name, Odometry, pose_callback, robot_name)
+    rospy.spin()
